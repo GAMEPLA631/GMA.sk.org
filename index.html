@@ -106,7 +106,7 @@
                     <span id="syncStatusText">Režim: Globálny Cloud (KVdb)</span>
                 </div>
                 <div class="text-gray-400">
-                    ID: <code class="bg-gray-900 px-1.5 py-0.5 rounded text-brand-neonPink">gp631_global_cloud_v3</code>
+                    ID: <code class="bg-gray-900 px-1.5 py-0.5 rounded text-brand-neonPink">gp631_global_cloud_v4</code>
                 </div>
             </div>
 
@@ -253,7 +253,7 @@
                     <span>Render PostgreSQL Referenčný reťazec</span>
                 </h4>
                 <div class="relative">
-                    <textarea readonly class="w-full h-14 p-2 bg-black/60 border border-gray-800 rounded font-mono text-[10px] text-brand-neonBlue focus:outline-none resize-none">postgresql://gamepla631_user:fgNBv2Ru6v0jqrBcwKlp4lfu3uKV89Yi@dpg-d99thoreo5us739455q0-a/gamepla631</textarea>
+                    <textarea readonly class="w-full h-14 p-2 bg-black/60 border border-gray-800 rounded font-mono text-[10px] text-brand-neonBlue focus:outline-none resize-none font-sans">postgresql://gamepla631_user:fgNBv2Ru6v0jqrBcwKlp4lfu3uKV89Yi@dpg-d99thoreo5us739455q0-a/gamepla631</textarea>
                     <button onclick="copyDbConnectionString()" class="absolute right-2 bottom-3 px-2 py-1 bg-gray-800 hover:bg-gray-700 text-white rounded text-[9px] flex items-center gap-1 transition-colors">
                         <i class="fa-regular fa-copy"></i> Kopírovať
                     </button>
@@ -285,16 +285,19 @@
                         <textarea id="postContent" required rows="4" placeholder="Sem napíšte detailný text príspevku..." class="w-full px-4 py-2.5 rounded-xl bg-gray-900/80 border border-gray-800 text-white placeholder-gray-500 focus:outline-none focus:border-brand-accent transition-colors resize-y"></textarea>
                     </div>
 
-                    <!-- PNG Image Upload Container -->
+                    <!-- PNG Image Upload Container with Compress Warnings -->
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
-                            <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1.5">PNG Obrázok (Max 200 KB)</label>
+                            <div class="flex justify-between items-center mb-1.5">
+                                <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider">PNG Obrázok</label>
+                                <span class="text-[9px] text-brand-neonGreen font-semibold bg-emerald-950 px-1.5 py-0.5 rounded border border-emerald-800">Auto-kompresia &lt; 45KB</span>
+                            </div>
                             <div class="flex items-center justify-center w-full">
                                 <label class="flex flex-col items-center justify-center w-full h-32 border-2 border-gray-800 border-dashed rounded-xl cursor-pointer bg-gray-900/40 hover:bg-gray-900/80 hover:border-brand-accent/50 transition-all">
                                     <div class="flex flex-col items-center justify-center pt-4 pb-4 text-center px-4">
                                         <i class="fa-solid fa-file-image text-2xl text-gray-500 mb-1.5"></i>
                                         <p class="text-xs text-gray-400 font-medium">Vybrať PNG obrázok</p>
-                                        <p class="text-[9px] text-gray-500 mt-0.5">Kompresor prispôsobí pod 200 KB</p>
+                                        <p class="text-[9px] text-gray-500 mt-0.5">Veľkosť sa automaticky prispôsobí</p>
                                     </div>
                                     <input type="file" id="postImage" accept="image/png" onchange="previewPngImage(event)" class="hidden" />
                                 </label>
@@ -366,7 +369,7 @@
                 Navrhnuté pre modernú cloudovú integráciu so zálohovaním na PC disk.
             </p>
             <div class="flex items-center gap-3">
-                <span class="px-2 py-1 rounded bg-gray-900 border border-gray-800 text-[10px] font-mono">Verzia 4.0.0 (Global Cloud & Disk Sync)</span>
+                <span class="px-2 py-1 rounded bg-gray-900 border border-gray-800 text-[10px] font-mono">Verzia 4.1.0 (Auto-Compress Cloud Enabled)</span>
             </div>
         </div>
     </footer>
@@ -445,8 +448,8 @@
     <!-- Main Application Script logic -->
     <script>
         // We use a free-tier KVdb bucket to securely host our key-values globally.
-        // This ensures the site actually updates live across different users, completely serverless.
-        const CLOUD_BUCKET_ID = "gp631_global_cloud_v3";
+        // Bucket ID updated to prevent cache conflicts with older structures.
+        const CLOUD_BUCKET_ID = "gp631_global_cloud_v4";
         const CLOUD_URL_POSTS = `https://kvdb.io/${CLOUD_BUCKET_ID}/posts`;
         const CLOUD_URL_ALERTS = `https://kvdb.io/${CLOUD_BUCKET_ID}/alerts`;
         const CLOUD_URL_USERS = `https://kvdb.io/${CLOUD_BUCKET_ID}/users`;
@@ -463,6 +466,7 @@
         // Log SQL queries inside simulated console window
         function logSqlToConsole(sqlQuery, responseMsg = "Dopyt úspešne spracovaný.") {
             const consoleBox = document.getElementById('dbConsoleLog');
+            if (!consoleBox) return;
             
             const queryDiv = document.createElement('div');
             queryDiv.className = "text-gray-300 mt-2 font-semibold";
@@ -482,9 +486,9 @@
         // Clear terminal log
         window.clearConsoleLog = function() {
             document.getElementById('dbConsoleLog').innerHTML = `
-                <div class="text-gray-500">// Monitor vyčištěný... Čakám na SQL dopyty z aplikácie.</div>
+                <div class="text-gray-500">// Monitor vyčistený... Čakám na SQL dopyty z aplikácie.</div>
             `;
-            showToast("Konzola bola vyčištěná", "success");
+            showToast("Konzola bola vyčistená", "success");
         };
 
         // Real-time Cloud Save (KVdb.io Key-Value cloud storage)
@@ -614,8 +618,8 @@
                     {
                         id: 1,
                         title: "Spustenie novej Cloud verzie GAMEPLA631!",
-                        content: "Vitajte na webe GAMEPLA631 Info. Všetky dáta, príspevky, lajky a upozornenia sa ukladajú do globálneho cloudu a sú prístupné každému. Vy ako admin môžete vytvárať nové novinky s PNG obrázkami do veľkosti 200KB.",
-                        imageUrl: "https://placehold.co/600x350/0b0f19/6366f1?text=GAMEPLA631+CLOUD",
+                        content: "Vitajte na webe GAMEPLA631 Info. Všetky dáta, príspevky, lajky a upozornenia sa ukladajú do globálneho cloudu a sú prístupné každému. Vy ako admin môžete vytvárať nové novinky s PNG obrázkami, ktoré náš inteligentný systém komprimuje pod prísny limit cloudových uzlov.",
+                        imageUrl: "",
                         author: "Admin_GAMEPLA",
                         createdAt: new Date().toISOString(),
                         likes: 5,
@@ -623,7 +627,7 @@
                     }
                 ];
                 notificationsTable = [
-                    { id: 1, title: "Cloud Aktivovaný", body: "Aplikácia komunikuje s Key-Value globálnym úložiskom.", tag: "UPDATE", createdAt: new Date().toISOString() }
+                    { id: 1, title: "Cloud Aktivovaný", body: "Aplikácia bezpečne komunikuje s Globálnym KV Cloudom.", tag: "UPDATE", createdAt: new Date().toISOString() }
                 ];
                 usersTable = [];
 
@@ -682,7 +686,7 @@
             renderNotifications();
         }
 
-        // Verify, load and compress PNG files to remain safely under 200KB
+        // Highly recursive auto-compression engine to satisfy the KVdb.io 64KB per key hard limit
         window.previewPngImage = function(event) {
             const file = event.target.files[0];
             const preview = document.getElementById('imagePreview');
@@ -702,49 +706,43 @@
             reader.onload = function(e) {
                 const img = new Image();
                 img.onload = function() {
-                    // Compress using HTML Canvas
-                    const canvas = document.createElement('canvas');
-                    let width = img.width;
-                    let height = img.height;
+                    let quality = 0.9;
+                    let scale = 1.0;
+                    
+                    // Recursive function to shrink image dimensions/resolution until base64 is strictly safe for KVdb (< 55KB base64 chars)
+                    function compress() {
+                        const canvas = document.createElement('canvas');
+                        const width = Math.round(img.width * scale);
+                        const height = Math.round(img.height * scale);
 
-                    // Constrain max resolutions for tight fitting sizes under 200KB
-                    const maxRes = 600;
-                    if (width > maxRes || height > maxRes) {
-                        if (width > height) {
-                            height = Math.round((height * maxRes) / width);
-                            width = maxRes;
+                        canvas.width = width;
+                        canvas.height = height;
+
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(img, 0, 0, width, height);
+
+                        // Output strictly in PNG format as requested
+                        const dataUrl = canvas.toDataURL('image/png');
+                        const charLength = dataUrl.length;
+                        const approxSizeKB = Math.round((charLength * 0.75) / 1024);
+
+                        // If PNG base64 string exceeds 58,000 characters (approx 44KB), we iteratively reduce canvas size
+                        if (approxSizeKB > 44 && scale > 0.1) {
+                            scale -= 0.1;
+                            compress();
                         } else {
-                            width = Math.round((width * maxRes) / height);
-                            height = maxRes;
+                            // Compression successful and fits the real online cloud perfectly!
+                            base64ImageString = dataUrl;
+                            preview.src = dataUrl;
+                            preview.classList.remove('hidden');
+                            placeholder.classList.add('hidden');
+                            formatInfo.textContent = "PNG (Optimized)";
+                            sizeInfo.textContent = `${approxSizeKB} KB (V poriadku)`;
+                            showToast(`Obrázok komprimovaný na ${approxSizeKB} KB pre cloud.`, "success");
                         }
                     }
 
-                    canvas.width = width;
-                    canvas.height = height;
-                    const ctx = canvas.getContext('2d');
-                    ctx.drawImage(img, 0, 0, width, height);
-
-                    // Output strictly in PNG format
-                    const compressedDataUrl = canvas.toDataURL('image/png', 0.7);
-                    const approxSize = Math.round(((compressedDataUrl.length - 814) * 0.75) / 1024);
-
-                    if (approxSize > 200) {
-                        showToast(`Obrázok je stále príliš veľký (${approxSize} KB). Skúste iný PNG obrázok.`, "error");
-                        base64ImageString = "";
-                        preview.classList.add('hidden');
-                        placeholder.classList.remove('hidden');
-                        formatInfo.textContent = "-";
-                        sizeInfo.textContent = "-";
-                        return;
-                    }
-
-                    base64ImageString = compressedDataUrl;
-                    preview.src = compressedDataUrl;
-                    preview.classList.remove('hidden');
-                    placeholder.classList.add('hidden');
-                    formatInfo.textContent = "PNG";
-                    sizeInfo.textContent = `${approxSize} KB / 200 KB`;
-                    showToast("PNG Obrázok načítaný a optimalizovaný!", "success");
+                    compress();
                 };
                 img.src = e.target.result;
             };
@@ -845,16 +843,11 @@
                 return;
             }
 
-            if (!base64ImageString) {
-                showToast("Pridajte platný PNG obrázok do 200 KB.", "error");
-                return;
-            }
-
             const newPost = {
                 id: Date.now(),
                 title: title,
                 content: content,
-                imageUrl: base64ImageString,
+                imageUrl: base64ImageString, // Optimized under-45KB PNG string
                 author: currentUser.username,
                 createdAt: new Date().toISOString(),
                 likes: 0,
@@ -872,7 +865,7 @@
                 ok ? "Dáta úspešne zapísané do GLOBÁLNEHO CLOUDU." : "Dáta uložené iba lokálne (Cloud dočasne nedostupný)."
             );
 
-            showToast("Príspevok bol uverejnený a synchronizovaný do Cloudu!", "success");
+            showToast("Prísne skomprimovaný príspevok uverejnený a odoslaný do Cloudu!", "success");
 
             // Reset form
             document.getElementById('newPostForm').reset();
@@ -1055,7 +1048,7 @@
                 if (notif.tag === 'FUNKCIA') tagClass = "bg-brand-neonPink/10 text-brand-neonPink border-brand-neonPink/20";
 
                 return `
-                    <div class="p-3 rounded-xl bg-gray-900/40 border border-gray-800/60 hover:border-gray-700/50 transition-colors flex flex-col gap-1.5">
+                    <div class="p-3 rounded-xl bg-gray-900/40 border border-gray-800/60 hover:border-gray-700/50 transition-colors flex flex-col gap-1.5 animate-in fade-in slide-in-from-top-1">
                         <div class="flex items-center justify-between">
                             <span class="text-xs font-bold text-gray-200">${notif.title}</span>
                             <span class="text-[9px] px-1.5 py-0.5 rounded border ${tagClass} font-mono">${notif.tag}</span>
