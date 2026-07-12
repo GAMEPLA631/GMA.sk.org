@@ -290,7 +290,7 @@
                         <div>
                             <div class="flex justify-between items-center mb-1.5">
                                 <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider">PNG Obrázok</label>
-                                <span class="text-[9px] text-brand-neonGreen font-semibold bg-emerald-950 px-1.5 py-0.5 rounded border border-emerald-800">Auto-kompresia &lt; 45KB</span>
+                                <span class="text-[9px] text-brand-neonGreen font-semibold bg-emerald-950 px-1.5 py-0.5 rounded border border-emerald-800">Auto-kompresia &lt; 11KB</span>
                             </div>
                             <div class="flex items-center justify-center w-full">
                                 <label class="flex flex-col items-center justify-center w-full h-32 border-2 border-gray-800 border-dashed rounded-xl cursor-pointer bg-gray-900/40 hover:bg-gray-900/80 hover:border-brand-accent/50 transition-all">
@@ -448,9 +448,10 @@
     <!-- Main Application Script logic -->
     <script>
         // We use a free-tier KVdb bucket to securely host our key-values globally.
-        // Bucket ID updated to prevent cache conflicts with older structures.
-        const CLOUD_BUCKET_ID = "gp631_global_cloud_v4";
-        const CLOUD_URL_POSTS = `https://kvdb.io/${CLOUD_BUCKET_ID}/posts`;
+        // Optimized database layout with multi-key referencing to bypass the 16KB limit.
+        const CLOUD_BUCKET_ID = "gp631_global_cloud_v5";
+        const CLOUD_URL_POSTS_INDEX = `https://kvdb.io/${CLOUD_BUCKET_ID}/posts_index`;
+        const CLOUD_URL_POST_PREFIX = `https://kvdb.io/${CLOUD_BUCKET_ID}/post_`;
         const CLOUD_URL_ALERTS = `https://kvdb.io/${CLOUD_BUCKET_ID}/alerts`;
         const CLOUD_URL_USERS = `https://kvdb.io/${CLOUD_BUCKET_ID}/users`;
 
@@ -520,23 +521,40 @@
             return fallbackData;
         }
 
-        // Vynútené stiahnutie najnovších dát z cloudu
+        // Vynútené stiahnutie najnovších dát z cloudu s podporou pre Multi-Key indexovanie
         window.forceSyncWithCloud = async function() {
             showToast("Sťahujem najnovšie dáta z cloudu...", "warning");
             document.getElementById('syncStatusText').textContent = "Synchronizujem...";
             
-            postsTable = await fetchFromCloud(CLOUD_URL_POSTS, postsTable);
-            notificationsTable = await fetchFromCloud(CLOUD_URL_ALERTS, notificationsTable);
-            usersTable = await fetchFromCloud(CLOUD_URL_USERS, usersTable);
+            try {
+                // 1. Načítať index ID príspevkov
+                const postsIndex = await fetchFromCloud(CLOUD_URL_POSTS_INDEX, []);
+                
+                // 2. Paralelne a bleskovo stiahnuť každý príspevok pod jeho vlastným kľúčom
+                const fetchPromises = postsIndex.map(id => 
+                    fetchFromCloud(`${CLOUD_URL_POST_PREFIX}${id}`, null)
+                );
+                const fetchedPosts = await Promise.all(fetchPromises);
+                
+                // Odfiltrovať prázdne alebo zmazané príspevky
+                postsTable = fetchedPosts.filter(p => p !== null);
+                
+                // 3. Načítať oznamy a registrovaných používateľov
+                notificationsTable = await fetchFromCloud(CLOUD_URL_ALERTS, notificationsTable);
+                usersTable = await fetchFromCloud(CLOUD_URL_USERS, usersTable);
 
-            // Sync down to localStorage so offline fallback has it too
-            localStorage.setItem('gp631_posts', JSON.stringify(postsTable));
-            localStorage.setItem('gp631_notifs', JSON.stringify(notificationsTable));
-            localStorage.setItem('gp631_users', JSON.stringify(usersTable));
+                // Uložiť lokálne ako offline zálohu
+                localStorage.setItem('gp631_posts', JSON.stringify(postsTable));
+                localStorage.setItem('gp631_notifs', JSON.stringify(notificationsTable));
+                localStorage.setItem('gp631_users', JSON.stringify(usersTable));
 
-            document.getElementById('syncStatusText').textContent = "Režim: Globálny Cloud (KVdb)";
-            showToast("Cloudové dáta úspešne načítané!", "success");
-            logSqlToConsole("SELECT * FROM posts UNION SELECT * FROM alerts ORDER BY created_at DESC;", "Dáta z globálneho cloudu synchronizované.");
+                document.getElementById('syncStatusText').textContent = "Režim: Globálny Cloud (KVdb)";
+                showToast("Cloudové dáta úspešne načítané!", "success");
+                logSqlToConsole("SELECT * FROM posts_index JOIN posts ON... ORDER BY created_at DESC;", "Index a príspevky úspešne stiahnuté a spojené.");
+            } catch (err) {
+                console.error("Chyba pri synchronizácii:", err);
+                showToast("Chyba pri sťahovaní z cloudu.", "error");
+            }
             
             renderPosts();
             renderNotifications();
@@ -585,13 +603,22 @@
                         notificationsTable = parsed.notifications;
                         usersTable = parsed.users;
 
-                        // Save locally
+                        // Uložiť lokálne
                         localStorage.setItem('gp631_posts', JSON.stringify(postsTable));
                         localStorage.setItem('gp631_notifs', JSON.stringify(notificationsTable));
                         localStorage.setItem('gp631_users', JSON.stringify(usersTable));
 
-                        // Push to Cloud
-                        await saveToCloud(CLOUD_URL_POSTS, postsTable);
+                        // Nahrať príspevky do cloudu v novom rozloženom formáte
+                        const postsIndex = postsTable.map(p => p.id);
+                        await saveToCloud(CLOUD_URL_POSTS_INDEX, postsIndex);
+                        
+                        // Nahrať každý jednotlivý príspevok
+                        const savePromises = postsTable.map(p => 
+                            saveToCloud(`${CLOUD_URL_POST_PREFIX}${p.id}`, p)
+                        );
+                        await Promise.all(savePromises);
+
+                        // Nahrať oznamy a používateľov
                         await saveToCloud(CLOUD_URL_ALERTS, notificationsTable);
                         await saveToCloud(CLOUD_URL_USERS, usersTable);
 
@@ -614,29 +641,31 @@
         // Reset to initial demo content
         window.resetToDemoData = async function() {
             if (confirm("Naozaj chcete obnoviť herný portál do pôvodného stavu? Všetky príspevky a pridané dáta budú premazané.")) {
-                postsTable = [
-                    {
-                        id: 1,
-                        title: "Spustenie novej Cloud verzie GAMEPLA631!",
-                        content: "Vitajte na webe GAMEPLA631 Info. Všetky dáta, príspevky, lajky a upozornenia sa ukladajú do globálneho cloudu a sú prístupné každému. Vy ako admin môžete vytvárať nové novinky s PNG obrázkami, ktoré náš inteligentný systém komprimuje pod prísny limit cloudových uzlov.",
-                        imageUrl: "",
-                        author: "Admin_GAMEPLA",
-                        createdAt: new Date().toISOString(),
-                        likes: 5,
-                        likedBy: []
-                    }
-                ];
+                const initialPostId = 1;
+                const demoPost = {
+                    id: initialPostId,
+                    title: "Spustenie novej Cloud verzie GAMEPLA631!",
+                    content: "Vitajte na webe GAMEPLA631 Info. Všetky dáta, príspevky, lajky a upozornenia sa ukladajú do globálneho cloudu a sú prístupné každému. Vy ako admin môžete vytvárať nové novinky s PNG obrázkami, ktoré náš inteligentný systém komprimuje pod prísny limit cloudových uzlov.",
+                    imageUrl: "",
+                    author: "Admin_GAMEPLA",
+                    createdAt: new Date().toISOString(),
+                    likes: 5,
+                    likedBy: []
+                };
+
+                postsTable = [demoPost];
                 notificationsTable = [
                     { id: 1, title: "Cloud Aktivovaný", body: "Aplikácia bezpečne komunikuje s Globálnym KV Cloudom.", tag: "UPDATE", createdAt: new Date().toISOString() }
                 ];
                 usersTable = [];
 
-                // Store locally and update Cloud
+                // Store locally and update Cloud in multi-key layout
                 localStorage.setItem('gp631_posts', JSON.stringify(postsTable));
                 localStorage.setItem('gp631_notifs', JSON.stringify(notificationsTable));
                 localStorage.setItem('gp631_users', JSON.stringify(usersTable));
 
-                await saveToCloud(CLOUD_URL_POSTS, postsTable);
+                await saveToCloud(CLOUD_URL_POSTS_INDEX, [initialPostId]);
+                await saveToCloud(`${CLOUD_URL_POST_PREFIX}${initialPostId}`, demoPost);
                 await saveToCloud(CLOUD_URL_ALERTS, notificationsTable);
                 await saveToCloud(CLOUD_URL_USERS, usersTable);
 
@@ -686,7 +715,7 @@
             renderNotifications();
         }
 
-        // Highly recursive auto-compression engine to satisfy the KVdb.io 64KB per key hard limit
+        // Super recursive micro-compression engine to satisfy the KVdb.io 16KB per key hard limit
         window.previewPngImage = function(event) {
             const file = event.target.files[0];
             const preview = document.getElementById('imagePreview');
@@ -706,10 +735,9 @@
             reader.onload = function(e) {
                 const img = new Image();
                 img.onload = function() {
-                    let quality = 0.9;
                     let scale = 1.0;
                     
-                    // Recursive function to shrink image dimensions/resolution until base64 is strictly safe for KVdb (< 55KB base64 chars)
+                    // Recursive function to shrink image until base64 is strictly under 11KB (safe for KVdb.io 16KB limit)
                     function compress() {
                         const canvas = document.createElement('canvas');
                         const width = Math.round(img.width * scale);
@@ -721,14 +749,14 @@
                         const ctx = canvas.getContext('2d');
                         ctx.drawImage(img, 0, 0, width, height);
 
-                        // Output strictly in PNG format as requested
+                        // Save strictly in PNG format as requested
                         const dataUrl = canvas.toDataURL('image/png');
                         const charLength = dataUrl.length;
                         const approxSizeKB = Math.round((charLength * 0.75) / 1024);
 
-                        // If PNG base64 string exceeds 58,000 characters (approx 44KB), we iteratively reduce canvas size
-                        if (approxSizeKB > 44 && scale > 0.1) {
-                            scale -= 0.1;
+                        // If PNG base64 string exceeds 11KB, we dynamically step down canvas size
+                        if (approxSizeKB > 11 && scale > 0.05) {
+                            scale -= 0.05;
                             compress();
                         } else {
                             // Compression successful and fits the real online cloud perfectly!
@@ -738,7 +766,7 @@
                             placeholder.classList.add('hidden');
                             formatInfo.textContent = "PNG (Optimized)";
                             sizeInfo.textContent = `${approxSizeKB} KB (V poriadku)`;
-                            showToast(`Obrázok komprimovaný na ${approxSizeKB} KB pre cloud.`, "success");
+                            showToast(`Obrázok skomprimovaný na ${approxSizeKB} KB pre cloud.`, "success");
                         }
                     }
 
@@ -826,7 +854,7 @@
             }
         };
 
-        // Handle Post creation by the verified admin
+        // Handle Post creation by the verified admin with safe multi-key save
         window.handleCreatePost = async function(event) {
             event.preventDefault();
 
@@ -843,29 +871,40 @@
                 return;
             }
 
+            const postId = Date.now();
             const newPost = {
-                id: Date.now(),
+                id: postId,
                 title: title,
                 content: content,
-                imageUrl: base64ImageString, // Optimized under-45KB PNG string
+                imageUrl: base64ImageString, // Highly optimized PNG string (<11KB)
                 author: currentUser.username,
                 createdAt: new Date().toISOString(),
                 likes: 0,
                 likedBy: []
             };
 
-            postsTable.unshift(newPost);
-            localStorage.setItem('gp631_posts', JSON.stringify(postsTable));
-            
-            // Push updated list to real online cloud
-            const ok = await saveToCloud(CLOUD_URL_POSTS, postsTable);
+            // 1. Save the individual post content to its own key safely
+            const savePostOk = await saveToCloud(`${CLOUD_URL_POST_PREFIX}${postId}`, newPost);
 
-            logSqlToConsole(
-                `INSERT INTO posts (title, content, image_url, author, created_at) VALUES ('${title.slice(0,30)}...', '${content.slice(0,35)}...', '[PNG Obrázok]', '${currentUser.username}', NOW());`,
-                ok ? "Dáta úspešne zapísané do GLOBÁLNEHO CLOUDU." : "Dáta uložené iba lokálne (Cloud dočasne nedostupný)."
-            );
+            if (savePostOk) {
+                // 2. Fetch current index, prepend new ID, and write it back
+                const postsIndex = await fetchFromCloud(CLOUD_URL_POSTS_INDEX, []);
+                postsIndex.unshift(postId);
+                await saveToCloud(CLOUD_URL_POSTS_INDEX, postsIndex);
 
-            showToast("Prísne skomprimovaný príspevok uverejnený a odoslaný do Cloudu!", "success");
+                // Update local memory and localStorage
+                postsTable.unshift(newPost);
+                localStorage.setItem('gp631_posts', JSON.stringify(postsTable));
+
+                logSqlToConsole(
+                    `INSERT INTO posts (id, title) VALUES (${postId}, '${title.slice(0,25)}...');`,
+                    "Príspevok uložený pod vlastným unikátnym kľúčom v cloude."
+                );
+                showToast("Príspevok bol uverejnený a odoslaný do Cloudu!", "success");
+            } else {
+                showToast("Chyba: Databáza zamietla uloženie príspevku.", "error");
+                return;
+            }
 
             // Reset form
             document.getElementById('newPostForm').reset();
@@ -882,11 +921,16 @@
         window.deletePost = async function(postId) {
             if (!currentUser || currentUser.role !== 'admin') return;
 
+            // 1. Remove from local memory
             postsTable = postsTable.filter(p => p.id !== postId);
             localStorage.setItem('gp631_posts', JSON.stringify(postsTable));
-            await saveToCloud(CLOUD_URL_POSTS, postsTable);
 
-            logSqlToConsole(`DELETE FROM posts WHERE id = ${postId};`, `Riadok vymazaný zo všetkých cloud inštancií.`);
+            // 2. Update the index in cloud
+            const postsIndex = await fetchFromCloud(CLOUD_URL_POSTS_INDEX, []);
+            const updatedIndex = postsIndex.filter(id => id !== postId);
+            await saveToCloud(CLOUD_URL_POSTS_INDEX, updatedIndex);
+
+            logSqlToConsole(`DELETE FROM posts WHERE id = ${postId};`, `ID príspevku odstránené zo sieťového indexu.`);
             showToast("Príspevok bol vymazaný.", "success");
             renderPosts();
         };
@@ -905,15 +949,17 @@
                 if (post.likedBy.includes(currentUser.username)) {
                     post.likedBy = post.likedBy.filter(u => u !== currentUser.username);
                     post.likes = Math.max(0, post.likes - 1);
-                    logSqlToConsole(`UPDATE posts SET likes = likes - 1, liked_by = array_remove(liked_by, '${currentUser.username}') WHERE id = ${postId};`);
+                    logSqlToConsole(`UPDATE posts SET likes = likes - 1 WHERE id = ${postId};`);
                 } else {
                     post.likedBy.push(currentUser.username);
                     post.likes += 1;
-                    logSqlToConsole(`UPDATE posts SET likes = likes + 1, liked_by = array_append(liked_by, '${currentUser.username}') WHERE id = ${postId};`);
+                    logSqlToConsole(`UPDATE posts SET likes = likes + 1 WHERE id = ${postId};`);
                 }
 
                 localStorage.setItem('gp631_posts', JSON.stringify(postsTable));
-                await saveToCloud(CLOUD_URL_POSTS, postsTable);
+                
+                // Save only this single updated post to the cloud! Extremely fast and safe.
+                await saveToCloud(`${CLOUD_URL_POST_PREFIX}${postId}`, post);
                 renderPosts();
             }
         };
