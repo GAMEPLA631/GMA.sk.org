@@ -1,0 +1,1119 @@
+<!DOCTYPE html>
+<html lang="sk" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GAMEPLA631 Info - Herný Portál</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Custom Tailwind Configuration -->
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Plus Jakarta Sans', 'sans-serif'],
+                    },
+                    colors: {
+                        brand: {
+                            dark: '#0B0F19',
+                            card: '#151D30',
+                            accent: '#8B5CF6',
+                            accentHover: '#7C3AED',
+                            neonGreen: '#10B981',
+                            neonBlue: '#06B6D4',
+                            neonPink: '#EC4899'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body {
+            background-color: #0B0F19;
+            color: #F3F4F6;
+            background-image: 
+                radial-gradient(at 0% 0%, rgba(139, 92, 246, 0.15) 0px, transparent 50%),
+                radial-gradient(at 100% 100%, rgba(6, 182, 212, 0.15) 0px, transparent 50%);
+            background-attachment: fixed;
+        }
+        .glass {
+            background: rgba(21, 29, 48, 0.7);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+        }
+        .neon-shadow-purple:hover {
+            box-shadow: 0 0 20px rgba(139, 92, 246, 0.4);
+            border-color: rgba(139, 92, 246, 0.6);
+        }
+        .neon-shadow-green {
+            box-shadow: 0 0 15px rgba(16, 185, 129, 0.3);
+        }
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0B0F19;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #1F2937;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #374151;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col font-sans selection:bg-brand-accent selection:text-white">
+
+    <!-- Navigation Bar -->
+    <nav class="sticky top-0 z-50 glass border-b border-gray-800/60 px-4 py-3">
+        <div class="max-w-7xl mx-auto flex items-center justify-between">
+            <!-- Logo & Brand -->
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-brand-accent to-brand-neonBlue flex items-center justify-center text-white shadow-lg shadow-brand-accent/30">
+                    <i class="fa-solid fa-gamepad text-xl"></i>
+                </div>
+                <div>
+                    <span class="text-xl font-extrabold tracking-wider bg-clip-text text-transparent bg-gradient-to-r from-white via-gray-200 to-brand-neonBlue">
+                        GAMEPLA631 <span class="text-brand-accent">INFO</span>
+                    </span>
+                    <span class="block text-[10px] text-gray-400 font-semibold tracking-widest uppercase">Herná Databáza</span>
+                </div>
+            </div>
+
+            <!-- Stats/Status Badge (Desktop) -->
+            <div class="hidden md:flex items-center gap-6 text-sm">
+                <div class="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-gray-800/40 border border-gray-700/50">
+                    <span class="w-2.5 h-2.5 rounded-full bg-brand-neonGreen animate-pulse"></span>
+                    <span class="text-gray-300 font-medium text-xs">Cloud DB Aktívna</span>
+                </div>
+                <div class="text-gray-400 text-xs">
+                    Admin kľúč pre test: <code class="bg-gray-800 px-1.5 py-0.5 rounded text-brand-neonPink font-mono">GAMEPLA631_ADMIN</code>
+                </div>
+            </div>
+
+            <!-- User Area / Login Buttons -->
+            <div class="flex items-center gap-3">
+                <!-- User Profile Info (Logged In) -->
+                <div id="userProfileArea" class="hidden flex items-center gap-3">
+                    <div class="text-right">
+                        <span id="navUsername" class="block text-sm font-bold text-gray-200">Hosť</span>
+                        <span id="navRoleBadge" class="inline-block text-[10px] font-extrabold uppercase px-2 py-0.5 rounded bg-brand-accent/20 text-brand-accent border border-brand-accent/30">Hráč</span>
+                    </div>
+                    <button id="logoutBtn" class="p-2.5 rounded-xl bg-gray-800/60 hover:bg-red-950/40 text-gray-400 hover:text-red-400 border border-gray-700/40 hover:border-red-900/50 transition-all" title="Odhlásiť sa">
+                        <i class="fa-solid fa-right-from-bracket"></i>
+                    </button>
+                </div>
+
+                <!-- Guest Buttons (Logged Out) -->
+                <div id="guestProfileArea" class="flex items-center gap-2">
+                    <button onclick="openAuthModal('login')" class="px-4 py-2 text-sm font-semibold text-gray-300 hover:text-white transition-colors">
+                        Prihlásiť sa
+                    </button>
+                    <button onclick="openAuthModal('register')" class="px-4 py-2 text-sm font-semibold text-white bg-gradient-to-r from-brand-accent to-indigo-600 hover:from-brand-accentHover hover:to-indigo-700 rounded-xl shadow-md shadow-brand-accent/20 transition-all transform hover:-translate-y-0.5">
+                        Registrácia
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Header -->
+    <header class="relative overflow-hidden py-12 px-4 border-b border-gray-900/40">
+        <div class="absolute inset-0 bg-[radial-gradient(circle_at_30%_30%,rgba(139,92,246,0.08),transparent_50%)]"></div>
+        <div class="max-w-4xl mx-auto text-center relative z-10">
+            <span class="px-3.5 py-1.5 rounded-full text-xs font-bold bg-brand-accent/10 text-brand-accent border border-brand-accent/20 tracking-wider uppercase mb-4 inline-block">
+                Oficiálny Informačný Kanál
+            </span>
+            <h1 class="text-4xl md:text-6xl font-black tracking-tight text-white mb-4 leading-tight">
+                Získaj Najnovšie <span class="bg-clip-text text-transparent bg-gradient-to-r from-brand-accent via-brand-neonPink to-brand-neonBlue">Upozornenia o Hrách</span>
+            </h1>
+            <p class="text-gray-400 text-base md:text-lg max-w-2xl mx-auto">
+                Vitajte na platforme <strong class="text-white">GAMEPLA631 Info</strong>. Prispievať novinkami môže výhradne administrátor, no registrovaní hráči získavajú okamžité aktualizácie a herné upozornenia zadarmo!
+            </p>
+        </div>
+    </header>
+
+    <!-- Main Content Grid -->
+    <main class="flex-grow max-w-7xl w-full mx-auto px-4 py-8 grid grid-cols-1 lg:grid-cols-12 gap-8">
+        
+        <!-- Left Column: Controls, User info & Notifications (4 Cols) -->
+        <div class="lg:col-span-4 space-y-6">
+            
+            <!-- Quick Status Dashboard -->
+            <div class="glass rounded-2xl p-6 relative overflow-hidden">
+                <div class="absolute top-0 right-0 w-24 h-24 bg-brand-accent/5 rounded-full blur-xl"></div>
+                <h3 class="text-lg font-extrabold text-white mb-4 flex items-center gap-2">
+                    <i class="fa-solid fa-circle-info text-brand-neonBlue"></i> O platforme
+                </h3>
+                <div class="space-y-4 text-sm text-gray-300">
+                    <p>
+                        Len oprávnený administrátor (<span class="text-brand-neonPink font-semibold">GAMEPLA631</span>) môže uverejňovať príspevky. Pre ostatných používateľov je pridávanie blokované.
+                    </p>
+                    <div class="p-3.5 rounded-xl bg-gray-900/60 border border-gray-800 space-y-2">
+                        <div class="flex justify-between items-center text-xs">
+                            <span class="text-gray-400">Limit veľkosti PNG:</span>
+                            <span class="text-brand-neonGreen font-mono font-bold">Max 200 KB</span>
+                        </div>
+                        <div class="flex justify-between items-center text-xs">
+                            <span class="text-gray-400">Cieľová databáza:</span>
+                            <span class="text-brand-neonBlue font-mono font-bold">Cloud Firestore</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Notifications System -->
+            <div class="glass rounded-2xl p-6 flex flex-col">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-lg font-extrabold text-white flex items-center gap-2">
+                        <i class="fa-solid fa-bell text-brand-neonPink"></i> Upozornenia o hrách
+                    </h3>
+                    <span id="notifCount" class="px-2 py-0.5 rounded-md bg-brand-neonPink/20 text-brand-neonPink text-xs font-bold">0 noviniek</span>
+                </div>
+
+                <!-- Admin Action: Create Notification -->
+                <div id="adminNotifForm" class="hidden mb-4 p-4 rounded-xl bg-gray-900/60 border border-brand-accent/30 space-y-3">
+                    <h4 class="text-xs font-bold text-brand-accent uppercase tracking-wider">Odoslať nové upozornenie (Admin)</h4>
+                    <input type="text" id="notifTitleInput" placeholder="Názov upozornenia (napr. Nový update)" class="w-full px-3 py-2 text-xs rounded-lg bg-gray-800 border border-gray-700 text-white placeholder-gray-500 focus:outline-none focus:border-brand-accent">
+                    <textarea id="notifBodyInput" rows="2" placeholder="Text upozornenia..." class="w-full px-3 py-2 text-xs rounded-lg bg-gray-800 border border-gray-700 text-white placeholder-gray-500 focus:outline-none focus:border-brand-accent resize-none"></textarea>
+                    <div class="flex justify-between items-center">
+                        <select id="notifTag" class="bg-gray-800 border border-gray-700 text-[11px] text-gray-300 rounded px-2 py-1 focus:outline-none">
+                            <option value="HRA">🎮 Nová Hra</option>
+                            <option value="UPDATE">⚙️ Update</option>
+                            <option value="FUNKCIA">🚀 Funkcia</option>
+                        </select>
+                        <button onclick="sendNotification()" class="px-3 py-1.5 text-xs font-semibold bg-brand-accent hover:bg-brand-accentHover text-white rounded-lg transition-colors flex items-center gap-1.5">
+                            <i class="fa-solid fa-paper-plane"></i> Odoslať
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Notifications List -->
+                <div id="notificationsList" class="space-y-3 max-h-[300px] overflow-y-auto pr-1">
+                    <!-- Loading state -->
+                    <div class="text-center py-6 text-gray-500 text-sm">
+                        <i class="fa-solid fa-circle-notch animate-spin text-brand-accent text-lg mb-2 block"></i>
+                        Načítavam upozornenia...
+                    </div>
+                </div>
+            </div>
+
+            <!-- Database connection info block (For user review) -->
+            <div class="glass rounded-2xl p-6">
+                <button onclick="toggleDbConfig()" class="w-full flex items-center justify-between text-gray-400 hover:text-white transition-colors text-xs font-bold uppercase tracking-wider">
+                    <span><i class="fa-solid fa-database mr-1"></i> PostgreSQL Konfigurácia</span>
+                    <i id="dbChevron" class="fa-solid fa-chevron-down transition-transform"></i>
+                </button>
+                <div id="dbConfigPanel" class="hidden mt-4 space-y-3 text-xs text-gray-400">
+                    <p class="leading-relaxed">
+                        Tento projekt je pripravený pre integráciu s vašou Render Cloud databázou. Pre bezpečné prepojenie vo vašom vlastnom backend prostredí (napr. Node.js/Express) použite nasledovný reťazec:
+                    </p>
+                    <div class="relative">
+                        <textarea readonly class="w-full h-24 p-2 bg-black/60 border border-gray-800 rounded font-mono text-[10px] text-brand-neonBlue focus:outline-none resize-none">postgresql://gamepla631_user:fgNBv2Ru6v0jqrBcwKlp4lfu3uKV89Yi@dpg-d99thoreo5us739455q0-a/gamepla631</textarea>
+                        <button onclick="copyDbConnectionString()" class="absolute right-2 bottom-3 px-2 py-1 bg-gray-800 hover:bg-gray-700 text-white rounded text-[10px] flex items-center gap-1 transition-colors">
+                            <i class="fa-regular fa-copy"></i> Kopírovať
+                        </button>
+                    </div>
+                    <p class="text-[10px] text-gray-500">
+                        * Poznámka: Priamy prístup k SQL z klientského prehliadača je zablokovaný pre bezpečnosť vašich údajov.
+                    </p>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Right Column: Posts Feed (8 Cols) -->
+        <div class="lg:col-span-8 space-y-6">
+
+            <!-- Admin Action: Create New Post -->
+            <div id="adminPostCreator" class="hidden glass rounded-2xl p-6 border border-brand-accent/40 relative overflow-hidden">
+                <div class="absolute top-0 right-0 px-4 py-1.5 bg-brand-accent text-white font-black text-[10px] uppercase tracking-widest rounded-bl-xl shadow-md">
+                    Admin Konzola
+                </div>
+                <h3 class="text-xl font-extrabold text-white mb-4 flex items-center gap-2">
+                    <i class="fa-solid fa-pen-to-square text-brand-accent"></i> Nový príspevok
+                </h3>
+                
+                <form id="newPostForm" onsubmit="handleCreatePost(event)" class="space-y-4">
+                    <div>
+                        <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1.5">Názov príspevku</label>
+                        <input type="text" id="postTitle" required placeholder="Zadaj názov novinky..." class="w-full px-4 py-2.5 rounded-xl bg-gray-900/80 border border-gray-800 text-white placeholder-gray-500 focus:outline-none focus:border-brand-accent transition-colors">
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1.5">Textový obsah</label>
+                        <textarea id="postContent" required rows="4" placeholder="Napíš sem všetky informácie o hre alebo aktualizácii..." class="w-full px-4 py-2.5 rounded-xl bg-gray-900/80 border border-gray-800 text-white placeholder-gray-500 focus:outline-none focus:border-brand-accent transition-colors resize-y"></textarea>
+                    </div>
+
+                    <!-- PNG Image Upload Container -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1.5">Obrázok (Len PNG, max 200 KB)</label>
+                            <div class="flex items-center justify-center w-full">
+                                <label class="flex flex-col items-center justify-center w-full h-32 border-2 border-gray-800 border-dashed rounded-xl cursor-pointer bg-gray-900/40 hover:bg-gray-900/80 hover:border-brand-accent/50 transition-all">
+                                    <div class="flex flex-col items-center justify-center pt-5 pb-6 text-center px-4">
+                                        <i class="fa-solid fa-cloud-arrow-up text-2xl text-gray-500 mb-2"></i>
+                                        <p class="text-xs text-gray-400 font-medium">Klikni pre výber PNG obrázku</p>
+                                        <p class="text-[10px] text-gray-500 mt-1">Automaticky zmenší pod 200 KB</p>
+                                    </div>
+                                    <input type="file" id="postImage" accept="image/png" onchange="previewPngImage(event)" class="hidden" />
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- Image Preview Area -->
+                        <div class="flex flex-col justify-between p-4 rounded-xl bg-gray-950/60 border border-gray-800">
+                            <span class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Náhľad obrázku</span>
+                            <div class="flex-grow flex items-center justify-center h-24 rounded bg-gray-900/40 border border-gray-800 overflow-hidden relative">
+                                <img id="imagePreview" class="hidden max-h-full max-w-full object-contain" />
+                                <span id="imagePreviewPlaceholder" class="text-xs text-gray-600">Nebol vybratý žiadny obrázok</span>
+                            </div>
+                            <div class="mt-2 flex justify-between items-center text-[10px]">
+                                <span class="text-gray-500">Formát: <strong id="infoFormat">-</strong></span>
+                                <span class="text-gray-500">Veľkosť: <strong id="infoSize">-</strong></span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Submit Button -->
+                    <div class="flex justify-end pt-2">
+                        <button type="submit" id="submitPostBtn" class="px-6 py-2.5 font-bold text-white bg-gradient-to-r from-brand-accent to-indigo-600 hover:from-brand-accentHover hover:to-indigo-700 rounded-xl shadow-lg shadow-brand-accent/30 transition-all transform hover:-translate-y-0.5 flex items-center gap-2">
+                            <i class="fa-solid fa-paper-plane"></i> Publikovať príspevok
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Lock Message for Regular Users -->
+            <div id="regularUserLockMsg" class="p-4 rounded-2xl bg-gray-900/40 border border-gray-800/80 flex items-center gap-3 text-sm text-gray-400">
+                <div class="w-8 h-8 rounded-lg bg-gray-800 flex items-center justify-center text-brand-neonPink">
+                    <i class="fa-solid fa-lock"></i>
+                </div>
+                <div>
+                    Možnosť pridávať príspevky je pre váš účet <strong class="text-white">zablokovaná</strong>. Prispievať môže len administrátor webu.
+                </div>
+            </div>
+
+            <!-- Feed Header & Filter -->
+            <div class="flex items-center justify-between border-b border-gray-800/80 pb-4">
+                <h2 class="text-2xl font-extrabold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-newspaper text-brand-neonBlue"></i> Novinky a Aktualizácie
+                </h2>
+                <div class="text-xs text-gray-400">
+                    Zoradené od najnovších
+                </div>
+            </div>
+
+            <!-- Posts Container -->
+            <div id="postsContainer" class="space-y-6">
+                <!-- Loading State -->
+                <div class="text-center py-12 text-gray-500">
+                    <i class="fa-solid fa-spinner animate-spin text-3xl text-brand-accent mb-3 block mx-auto"></i>
+                    Načítavam najnovšie príspevky z cloudu...
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="glass border-t border-gray-900/80 mt-12 py-8 px-4 text-center text-sm text-gray-500">
+        <div class="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
+            <div class="flex items-center gap-2">
+                <div class="w-6 h-6 rounded-md bg-brand-accent flex items-center justify-center text-white text-xs">
+                    <i class="fa-solid fa-gamepad"></i>
+                </div>
+                <span class="font-bold text-gray-400">GAMEPLA631 Info &copy; 2026</span>
+            </div>
+            <p class="text-xs">
+                Všetky príspevky a databázové záznamy sú aktualizované v reálnom čase pomocou Cloud technológie.
+            </p>
+            <div class="flex items-center gap-3 text-xs">
+                <span class="px-2 py-1 rounded bg-gray-850 border border-gray-800">Verzia 2.1.0</span>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Authentication Modal (Login / Register) -->
+    <div id="authModal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+        <div class="relative w-full max-w-md glass rounded-3xl p-6 border border-gray-800 shadow-2xl animate-in fade-in zoom-in duration-250">
+            
+            <!-- Close Button -->
+            <button onclick="closeAuthModal()" class="absolute top-4 right-4 text-gray-400 hover:text-white transition-colors">
+                <i class="fa-solid fa-xmark text-lg"></i>
+            </button>
+
+            <!-- Modal Headers -->
+            <div class="text-center mb-6">
+                <h3 id="authModalTitle" class="text-2xl font-black text-white">Prihlásenie</h3>
+                <p id="authModalSubtitle" class="text-xs text-gray-400 mt-1">Vitajte späť v hre!</p>
+            </div>
+
+            <!-- Form -->
+            <form onsubmit="handleAuthSubmit(event)" class="space-y-4">
+                <input type="hidden" id="authMode" value="login">
+
+                <div>
+                    <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1.5">Prihlasovacie meno</label>
+                    <div class="relative">
+                        <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-500">
+                            <i class="fa-solid fa-user text-sm"></i>
+                        </span>
+                        <input type="text" id="authUsername" required placeholder="napr. Hrac123" class="w-full pl-10 pr-4 py-2.5 rounded-xl bg-gray-900 border border-gray-800 text-white placeholder-gray-500 focus:outline-none focus:border-brand-accent transition-colors">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1.5">Heslo</label>
+                    <div class="relative">
+                        <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-500">
+                            <i class="fa-solid fa-lock text-sm"></i>
+                        </span>
+                        <input type="password" id="authPassword" required placeholder="••••••••" class="w-full pl-10 pr-4 py-2.5 rounded-xl bg-gray-900 border border-gray-800 text-white placeholder-gray-500 focus:outline-none focus:border-brand-accent transition-colors">
+                    </div>
+                </div>
+
+                <!-- Registration Optional Admin Key -->
+                <div id="adminKeyField" class="hidden">
+                    <div class="flex justify-between items-center mb-1.5">
+                        <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider">Máš Admin Kľúč? (Nepovinné)</label>
+                        <span class="text-[10px] text-brand-neonPink font-mono">GAMEPLA631_ADMIN</span>
+                    </div>
+                    <div class="relative">
+                        <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-500">
+                            <i class="fa-solid fa-key text-sm"></i>
+                        </span>
+                        <input type="password" id="authAdminKey" placeholder="Zadaj kľúč pre rolu Admina..." class="w-full pl-10 pr-4 py-2.5 rounded-xl bg-gray-900 border border-gray-800 text-white placeholder-gray-500 focus:outline-none focus:border-brand-accent transition-colors">
+                    </div>
+                </div>
+
+                <!-- Action Button -->
+                <button type="submit" class="w-full py-3 font-bold text-white bg-gradient-to-r from-brand-accent to-indigo-600 hover:from-brand-accentHover hover:to-indigo-700 rounded-xl shadow-lg shadow-brand-accent/20 transition-all transform hover:-translate-y-0.5 mt-2">
+                    <span id="authSubmitText">Prihlásiť sa</span>
+                </button>
+            </form>
+
+            <!-- Toggle Auth Mode -->
+            <div class="text-center mt-6 text-sm text-gray-400">
+                <span id="authTogglePrompt">Ešte nemáš účet?</span>
+                <button onclick="toggleAuthMode()" id="authToggleBtn" class="text-brand-accent hover:underline font-semibold ml-1">Zaregistruj sa zadarmo</button>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Custom Toast Notification System (Replacement for banned alerts) -->
+    <div id="toastContainer" class="fixed bottom-5 right-5 z-50 space-y-3 pointer-events-none"></div>
+
+    <!-- Firebase Integrations & App Logic -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, getDoc, setDoc, updateDoc, deleteDoc, onSnapshot, collection, query, addDoc, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // Environment Variables supplied by system
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'gameplay631-info';
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {
+            apiKey: "mock-api-key",
+            authDomain: "mock-auth-domain",
+            projectId: "mock-project",
+            storageBucket: "mock-storage",
+            messagingSenderId: "mock-sender",
+            appId: "mock-app"
+        };
+        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const auth = getAuth(app);
+
+        // Core App State
+        let currentUserData = null;
+        let isUserLoaded = false;
+        let base64ImageString = ""; // Stores uploaded post image
+        let activePosts = [];
+        let activeNotifications = [];
+
+        // ----------------- FIRESTORE HELPER PATHS (RULE 1 & 2) -----------------
+        const postsCollectionRef = collection(db, 'artifacts', appId, 'public', 'data', 'posts');
+        const usersCollectionRef = collection(db, 'artifacts', appId, 'public', 'data', 'users');
+        const notificationsCollectionRef = collection(db, 'artifacts', appId, 'public', 'data', 'notifications');
+
+        // ----------------- SECURITY & AUTH SIGN-IN (RULE 3) --------------------
+        async function runAuthenticationCheck() {
+            try {
+                if (initialAuthToken) {
+                    await signInWithCustomToken(auth, initialAuthToken);
+                } else {
+                    await signInAnonymously(auth);
+                }
+            } catch (error) {
+                console.error("Auth Error, falling back to secure local state", error);
+                // Even if auth fails, we let user interact with local state or retry
+            }
+        }
+
+        // Handle Auth State Changes
+        onAuthStateChanged(auth, async (firebaseUser) => {
+            if (firebaseUser) {
+                // Initialize active user state
+                loadSessionUser();
+            } else {
+                currentUserData = null;
+                updateUIAccessibility();
+            }
+        });
+
+        // Local Storage Session Auth (for custom user database mock on top of Firestore)
+        function loadSessionUser() {
+            const savedUser = localStorage.getItem('gamepla631_user_session');
+            if (savedUser) {
+                currentUserData = JSON.parse(savedUser);
+                showToast(`Vitajte späť, ${currentUserData.username}!`, 'success');
+            } else {
+                currentUserData = null;
+            }
+            updateUIAccessibility();
+            isUserLoaded = true;
+        }
+
+        // ----------------- UI UPDATES BASED ON USER ROLE -----------------
+        function updateUIAccessibility() {
+            const userProfileArea = document.getElementById('userProfileArea');
+            const guestProfileArea = document.getElementById('guestProfileArea');
+            const adminPostCreator = document.getElementById('adminPostCreator');
+            const regularUserLockMsg = document.getElementById('regularUserLockMsg');
+            const adminNotifForm = document.getElementById('adminNotifForm');
+
+            if (currentUserData) {
+                // Logged In
+                userProfileArea.classList.remove('hidden');
+                guestProfileArea.classList.add('hidden');
+                document.getElementById('navUsername').textContent = currentUserData.username;
+                
+                const roleBadge = document.getElementById('navRoleBadge');
+                roleBadge.textContent = currentUserData.role === 'admin' ? 'ADMIN' : 'HRÁČ';
+                if (currentUserData.role === 'admin') {
+                    roleBadge.className = "inline-block text-[10px] font-extrabold uppercase px-2 py-0.5 rounded bg-brand-neonPink/20 text-brand-neonPink border border-brand-neonPink/30 shadow-sm";
+                    
+                    // Show post & notification creation tools for Admin
+                    adminPostCreator.classList.remove('hidden');
+                    adminNotifForm.classList.remove('hidden');
+                    regularUserLockMsg.classList.add('hidden');
+                } else {
+                    roleBadge.className = "inline-block text-[10px] font-extrabold uppercase px-2 py-0.5 rounded bg-brand-neonBlue/20 text-brand-neonBlue border border-brand-neonBlue/30";
+                    
+                    // Hide post creation tools for Players
+                    adminPostCreator.classList.add('hidden');
+                    adminNotifForm.classList.add('hidden');
+                    regularUserLockMsg.classList.remove('hidden');
+                }
+            } else {
+                // Guest (Not Logged In)
+                userProfileArea.classList.add('hidden');
+                guestProfileArea.classList.remove('hidden');
+                adminPostCreator.classList.add('hidden');
+                adminNotifForm.classList.add('hidden');
+                regularUserLockMsg.classList.remove('hidden');
+            }
+        }
+
+        // ----------------- REGISTRATION & LOGIN ACTIONS -----------------
+        window.handleAuthSubmit = async function(event) {
+            event.preventDefault();
+            const mode = document.getElementById('authMode').value;
+            const usernameInput = document.getElementById('authUsername').value.trim();
+            const passwordInput = document.getElementById('authPassword').value;
+            const adminKeyInput = document.getElementById('authAdminKey').value.trim();
+
+            if (!usernameInput || !passwordInput) {
+                showToast("Vyplňte prosím všetky polia.", "error");
+                return;
+            }
+
+            // Simple sanitation
+            const cleanUsername = usernameInput.replace(/[^a-zA-Z0-9_]/g, "");
+            if (cleanUsername !== usernameInput) {
+                showToast("Užívateľské meno môže obsahovať iba písmená, čísla a podčiarkovník.", "error");
+                return;
+            }
+
+            try {
+                // Ensure auth before Firestore queries (RULE 3)
+                if (!auth.currentUser) {
+                    await runAuthenticationCheck();
+                }
+
+                if (mode === 'register') {
+                    // Check if username already exists in Firestore
+                    const userDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'users', cleanUsername.toLowerCase());
+                    const userSnap = await getDoc(userDocRef);
+
+                    if (userSnap.exists()) {
+                        showToast("Toto užívateľské meno je už obsadené.", "error");
+                        return;
+                    }
+
+                    // Determine Role
+                    let role = 'player';
+                    if (adminKeyInput) {
+                        if (adminKeyInput === 'GAMEPLA631_ADMIN') {
+                            role = 'admin';
+                            showToast("Úspešne overený kľúč Admina!", "success");
+                        } else {
+                            showToast("Neplatný admin kľúč! Budete registrovaný ako bežný hráč.", "warning");
+                        }
+                    }
+
+                    // Save custom user to Firestore (RULE 1 path)
+                    const newUser = {
+                        username: cleanUsername,
+                        role: role,
+                        password: passwordInput, // Plaintext for simplistic demo login; secure hashing would normally occur here
+                        createdAt: new Date().toISOString()
+                    };
+
+                    await setDoc(userDocRef, newUser);
+
+                    currentUserData = { username: cleanUsername, role: role };
+                    localStorage.setItem('gamepla631_user_session', JSON.stringify(currentUserData));
+                    showToast("Registrácia prebehla úspešne a zadarmo!", "success");
+                    closeAuthModal();
+                    updateUIAccessibility();
+
+                } else {
+                    // Login Process
+                    const userDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'users', cleanUsername.toLowerCase());
+                    const userSnap = await getDoc(userDocRef);
+
+                    if (!userSnap.exists() || userSnap.data().password !== passwordInput) {
+                        showToast("Nesprávne meno alebo heslo.", "error");
+                        return;
+                    }
+
+                    const userData = userSnap.data();
+                    currentUserData = { username: userData.username, role: userData.role };
+                    localStorage.setItem('gamepla631_user_session', JSON.stringify(currentUserData));
+                    showToast(`Vitaj späť, ${userData.username}!`, "success");
+                    closeAuthModal();
+                    updateUIAccessibility();
+                }
+
+            } catch (error) {
+                console.error("Auth operation failed", error);
+                showToast("Nepodarilo sa pripojiť k databáze.", "error");
+            }
+        };
+
+        // ----------------- PNG VALIDATION & COMPRESSION (MAX 200KB) -----------------
+        window.previewPngImage = function(event) {
+            const file = event.target.files[0];
+            const preview = document.getElementById('imagePreview');
+            const previewPlaceholder = document.getElementById('imagePreviewPlaceholder');
+            const infoFormat = document.getElementById('infoFormat');
+            const infoSize = document.getElementById('infoSize');
+
+            if (!file) return;
+
+            // Strict PNG check
+            if (file.type !== "image/png") {
+                showToast("Povolené sú výhradne obrázky vo formáte PNG!", "error");
+                event.target.value = "";
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const img = new Image();
+                img.onload = function() {
+                    // Automatical compression using canvas to ensure it stays below 200KB limit
+                    const canvas = document.createElement('canvas');
+                    let width = img.width;
+                    let height = img.height;
+
+                    // Scale down if image is high-res to keep file size ultra low
+                    const maxResolution = 800;
+                    if (width > maxResolution || height > maxResolution) {
+                        if (width > height) {
+                            height = Math.round((height * maxResolution) / width);
+                            width = maxResolution;
+                        } else {
+                            width = Math.round((width * maxResolution) / height);
+                            height = maxResolution;
+                        }
+                    }
+
+                    canvas.width = width;
+                    canvas.height = height;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, width, height);
+
+                    // Convert to base64
+                    const dataUrl = canvas.toDataURL('image/png');
+                    
+                    // Base64 approximation check (3 bytes of data in 4 base64 characters)
+                    const approxSizeInBytes = (dataUrl.length - 814) * 0.75; 
+                    const sizeInKb = approxSizeInBytes / 1024;
+
+                    if (sizeInKb > 200) {
+                        showToast(`Obrázok je stále príliš veľký (${Math.round(sizeInKb)} KB). Skúste iný alebo menší PNG obrázok.`, "error");
+                        base64ImageString = "";
+                        preview.classList.add('hidden');
+                        previewPlaceholder.classList.remove('hidden');
+                        infoFormat.textContent = "-";
+                        infoSize.textContent = "-";
+                        return;
+                    }
+
+                    base64ImageString = dataUrl;
+                    preview.src = dataUrl;
+                    preview.classList.remove('hidden');
+                    previewPlaceholder.classList.add('hidden');
+                    infoFormat.textContent = "PNG";
+                    infoSize.textContent = `${Math.round(sizeInKb)} KB / 200 KB`;
+                    showToast("Obrázok bol úspešne importovaný a prispôsobený limitom.", "success");
+                };
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        };
+
+        // Create New Post Handler
+        window.handleCreatePost = async function(event) {
+            event.preventDefault();
+
+            if (!currentUserData || currentUserData.role !== 'admin') {
+                showToast("Prístup odmietnutý. Len pre administrátorov.", "error");
+                return;
+            }
+
+            const title = document.getElementById('postTitle').value.trim();
+            const content = document.getElementById('postContent').value.trim();
+
+            if (!title || !content) {
+                showToast("Názov a obsah sú povinné.", "error");
+                return;
+            }
+
+            if (!base64ImageString) {
+                showToast("Vyžaduje sa platný PNG obrázok do veľkosti 200 KB.", "error");
+                return;
+            }
+
+            try {
+                const submitBtn = document.getElementById('submitPostBtn');
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = `<i class="fa-solid fa-spinner animate-spin"></i> Odosielam...`;
+
+                // Firestore Document Structure (RULE 1 Path)
+                const newPost = {
+                    title: title,
+                    content: content,
+                    imageUrl: base64ImageString,
+                    author: currentUserData.username,
+                    createdAt: new Date().toISOString(),
+                    likes: 0,
+                    likedBy: []
+                };
+
+                await addDoc(postsCollectionRef, newPost);
+
+                showToast("Nový príspevok úspešne uverejnený!", "success");
+
+                // Clear Form
+                document.getElementById('newPostForm').reset();
+                document.getElementById('imagePreview').classList.add('hidden');
+                document.getElementById('imagePreviewPlaceholder').classList.remove('hidden');
+                document.getElementById('infoFormat').textContent = "-";
+                document.getElementById('infoSize').textContent = "-";
+                base64ImageString = "";
+
+            } catch (error) {
+                console.error("Post publish error", error);
+                showToast("Chyba pri ukladaní do databázy.", "error");
+            } finally {
+                const submitBtn = document.getElementById('submitPostBtn');
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = `<i class="fa-solid fa-paper-plane"></i> Publikovať príspevok`;
+            }
+        };
+
+        // ----------------- NOTIFICATIONS / ALERTS SYSTEM -----------------
+        window.sendNotification = async function() {
+            if (!currentUserData || currentUserData.role !== 'admin') return;
+
+            const title = document.getElementById('notifTitleInput').value.trim();
+            const body = document.getElementById('notifBodyInput').value.trim();
+            const tag = document.getElementById('notifTag').value;
+
+            if (!title || !body) {
+                showToast("Vyplňte názov a text upozornenia.", "error");
+                return;
+            }
+
+            try {
+                const newNotification = {
+                    title: title,
+                    body: body,
+                    tag: tag,
+                    createdAt: new Date().toISOString()
+                };
+
+                await addDoc(notificationsCollectionRef, newNotification);
+
+                // Reset notification form
+                document.getElementById('notifTitleInput').value = "";
+                document.getElementById('notifBodyInput').value = "";
+                showToast("Upozornenie bolo úspešne odoslané hráčom!", "success");
+
+            } catch (error) {
+                console.error("Error publishing notification", error);
+                showToast("Chyba pri odosielaní upozornenia.", "error");
+            }
+        };
+
+        // Delete Post (Only Admin can do this)
+        window.deletePost = async function(postId) {
+            if (!currentUserData || currentUserData.role !== 'admin') {
+                showToast("Na vymazanie nemáte dostatočné oprávnenie.", "error");
+                return;
+            }
+
+            try {
+                const postDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'posts', postId);
+                await deleteDoc(postDocRef);
+                showToast("Príspevok bol úspešne vymazaný.", "success");
+            } catch (error) {
+                console.error("Error deleting post", error);
+                showToast("Chyba pri mazaní príspevku z cloudu.", "error");
+            }
+        };
+
+        // Like Post
+        window.likePost = async function(postId) {
+            if (!currentUserData) {
+                showToast("Pre lajkovanie musíte byť prihlásený.", "warning");
+                return;
+            }
+
+            try {
+                const postDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'posts', postId);
+                const postSnap = await getDoc(postDocRef);
+
+                if (postSnap.exists()) {
+                    const postData = postSnap.data();
+                    let likedBy = postData.likedBy || [];
+                    let likes = postData.likes || 0;
+
+                    if (likedBy.includes(currentUserData.username)) {
+                        // Unlike
+                        likedBy = likedBy.filter(user => user !== currentUserData.username);
+                        likes = Math.max(0, likes - 1);
+                    } else {
+                        // Like
+                        likedBy.push(currentUserData.username);
+                        likes += 1;
+                    }
+
+                    await updateDoc(postDocRef, {
+                        likes: likes,
+                        likedBy: likedBy
+                    });
+                }
+            } catch (error) {
+                console.error("Error updating likes", error);
+            }
+        };
+
+        // ----------------- REAL-TIME DATA STREAMING (RULE 2) -----------------
+        function startRealtimeDatabaseListeners() {
+            // 1. Posts Stream
+            onSnapshot(postsCollectionRef, (snapshot) => {
+                const posts = [];
+                snapshot.forEach((doc) => {
+                    posts.push({ id: doc.id, ...doc.data() });
+                });
+
+                // Sort posts locally in JavaScript (RULE 2 - No complex server-side orderBys)
+                posts.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+                activePosts = posts;
+                renderPostsFeed(posts);
+            }, (error) => {
+                console.error("Posts Subscription error", error);
+                showToast("Nepodarilo sa načitať príspevky v reálnom čase.", "error");
+            });
+
+            // 2. Notifications Stream
+            onSnapshot(notificationsCollectionRef, (snapshot) => {
+                const notifications = [];
+                snapshot.forEach((doc) => {
+                    notifications.push({ id: doc.id, ...doc.data() });
+                });
+
+                // Sort notifications locally
+                notifications.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+                activeNotifications = notifications;
+                renderNotifications(notifications);
+            }, (error) => {
+                console.error("Notifications Subscription error", error);
+            });
+        }
+
+        // ----------------- RENDER DATA TO HTML -----------------
+        function renderPostsFeed(posts) {
+            const container = document.getElementById('postsContainer');
+            if (posts.length === 0) {
+                container.innerHTML = `
+                    <div class="glass rounded-2xl p-12 text-center text-gray-500 border border-gray-800">
+                        <i class="fa-solid fa-gamepad text-5xl text-gray-700 mb-4 block"></i>
+                        <p class="text-lg font-semibold text-gray-400">Momentálne tu nie sú žiadne príspevky</p>
+                        <p class="text-xs text-gray-500 mt-1">Zaregistrujte sa s admin rolou a vytvorte prvý príspevok!</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = posts.map(post => {
+                const formattedDate = new Date(post.createdAt).toLocaleDateString('sk-SK', {
+                    day: '2-digit',
+                    month: 'long',
+                    year: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+
+                const isAdmin = currentUserData && currentUserData.role === 'admin';
+                const hasLiked = currentUserData && post.likedBy && post.likedBy.includes(currentUserData.username);
+
+                return `
+                    <article class="glass rounded-2xl overflow-hidden border border-gray-800/80 hover:border-gray-700/80 transition-all duration-300">
+                        <div class="p-5 flex items-center justify-between border-b border-gray-800/50 bg-gray-900/10">
+                            <div class="flex items-center gap-3">
+                                <div class="w-9 h-9 rounded-full bg-brand-accent/20 flex items-center justify-center text-brand-accent font-black text-sm">
+                                    A
+                                </div>
+                                <div>
+                                    <span class="block text-sm font-bold text-gray-100">${post.author || 'Administrátor'}</span>
+                                    <span class="block text-[10px] text-gray-500">${formattedDate}</span>
+                                </div>
+                            </div>
+                            
+                            <!-- Delete action (Only Admin) -->
+                            ${isAdmin ? `
+                                <button onclick="deletePost('${post.id}')" class="p-2 text-gray-500 hover:text-red-400 rounded-lg hover:bg-red-950/20 transition-colors" title="Vymazať príspevok">
+                                    <i class="fa-solid fa-trash-can"></i>
+                                </button>
+                            ` : ''}
+                        </div>
+
+                        <!-- Post Body Content -->
+                        <div class="p-6 space-y-4">
+                            <h3 class="text-xl md:text-2xl font-extrabold text-white leading-snug hover:text-brand-neonBlue transition-colors">
+                                ${post.title}
+                            </h3>
+                            <p class="text-gray-300 leading-relaxed text-sm md:text-base whitespace-pre-wrap">${post.content}</p>
+                            
+                            <!-- PNG Image Container -->
+                            ${post.imageUrl ? `
+                                <div class="mt-4 rounded-xl overflow-hidden border border-gray-800 bg-black/40 flex items-center justify-center max-h-[450px]">
+                                    <img src="${post.imageUrl}" alt="${post.title}" class="max-h-[450px] w-full object-contain">
+                                </div>
+                            ` : ''}
+                        </div>
+
+                        <!-- Interactivity Footer -->
+                        <div class="p-4 bg-gray-900/30 border-t border-gray-800/40 flex items-center justify-between text-xs">
+                            <div class="flex items-center gap-4">
+                                <button onclick="likePost('${post.id}')" class="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-gray-800/40 hover:bg-brand-accent/10 border border-gray-700/40 hover:border-brand-accent/30 transition-all ${hasLiked ? 'text-brand-accent font-bold' : 'text-gray-400'}">
+                                    <i class="${hasLiked ? 'fa-solid' : 'fa-regular'} fa-thumbs-up"></i>
+                                    <span>Páči sa mi to (${post.likes || 0})</span>
+                                </button>
+                            </div>
+                            <span class="text-gray-500 flex items-center gap-1.5 font-semibold text-[10px] uppercase tracking-wider">
+                                <span class="w-1.5 h-1.5 rounded-full bg-brand-neonGreen"></span> Online Príspevok
+                            </span>
+                        </div>
+                    </article>
+                `;
+            }).join('');
+        }
+
+        function renderNotifications(notifs) {
+            const container = document.getElementById('notificationsList');
+            const notifCountBadge = document.getElementById('notifCount');
+
+            notifCountBadge.textContent = `${notifs.length} noviniek`;
+
+            if (notifs.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-6 text-gray-500 text-xs">
+                        Momentálne nemáte žiadne nové herné upozornenia.
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = notifs.map(notif => {
+                let tagColor = 'bg-brand-accent/10 text-brand-accent border-brand-accent/20';
+                if (notif.tag === 'HRA') tagColor = 'bg-brand-neonGreen/10 text-brand-neonGreen border-brand-neonGreen/20';
+                if (notif.tag === 'UPDATE') tagColor = 'bg-brand-neonBlue/10 text-brand-neonBlue border-brand-neonBlue/20';
+                if (notif.tag === 'FUNKCIA') tagColor = 'bg-brand-neonPink/10 text-brand-neonPink border-brand-neonPink/20';
+
+                return `
+                    <div class="p-3.5 rounded-xl bg-gray-900/30 border border-gray-850 flex flex-col space-y-1 hover:border-gray-800 transition-colors">
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs font-black text-gray-100">${notif.title}</span>
+                            <span class="text-[9px] px-1.5 py-0.5 rounded border ${tagColor}">${notif.tag || 'OZNAM'}</span>
+                        </div>
+                        <p class="text-xs text-gray-400 leading-normal">${notif.body}</p>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // ----------------- UI CONTROL ACTIONS & TOASTS -----------------
+        window.openAuthModal = function(mode = 'login') {
+            document.getElementById('authModal').classList.remove('hidden');
+            document.getElementById('authMode').value = mode;
+            
+            const title = document.getElementById('authModalTitle');
+            const subtitle = document.getElementById('authModalSubtitle');
+            const submitText = document.getElementById('authSubmitText');
+            const adminField = document.getElementById('adminKeyField');
+            const promptText = document.getElementById('authTogglePrompt');
+            const toggleBtn = document.getElementById('authToggleBtn');
+
+            if (mode === 'register') {
+                title.textContent = "Registrácia Hráča";
+                subtitle.textContent = "Založ si zadarmo herný profil.";
+                submitText.textContent = "Zaregistrovať sa";
+                adminField.classList.remove('hidden');
+                promptText.textContent = "Už máš herný účet?";
+                toggleBtn.textContent = "Prihlásiť sa";
+            } else {
+                title.textContent = "Prihlásenie";
+                subtitle.textContent = "Vitaj späť v hernom portáli.";
+                submitText.textContent = "Prihlásiť sa";
+                adminField.classList.add('hidden');
+                promptText.textContent = "Ešte nemáš účet?";
+                toggleBtn.textContent = "Zaregistruj sa zadarmo";
+            }
+        };
+
+        window.closeAuthModal = function() {
+            document.getElementById('authModal').classList.add('hidden');
+            document.getElementById('authUsername').value = "";
+            document.getElementById('authPassword').value = "";
+            document.getElementById('authAdminKey').value = "";
+        };
+
+        window.toggleAuthMode = function() {
+            const currentMode = document.getElementById('authMode').value;
+            openAuthModal(currentMode === 'login' ? 'register' : 'login');
+        };
+
+        window.toggleDbConfig = function() {
+            const panel = document.getElementById('dbConfigPanel');
+            const chevron = document.getElementById('dbChevron');
+            const isHidden = panel.classList.contains('hidden');
+            
+            if (isHidden) {
+                panel.classList.remove('hidden');
+                chevron.classList.add('rotate-180');
+            } else {
+                panel.classList.add('hidden');
+                chevron.classList.remove('rotate-180');
+            }
+        };
+
+        window.copyDbConnectionString = function() {
+            const textToCopy = "postgresql://gamepla631_user:fgNBv2Ru6v0jqrBcwKlp4lfu3uKV89Yi@dpg-d99thoreo5us739455q0-a/gamepla631";
+            
+            // Reusable browser backup copy
+            const textArea = document.createElement("textarea");
+            textArea.value = textToCopy;
+            document.body.appendChild(textArea);
+            textArea.select();
+            try {
+                document.execCommand('copy');
+                showToast("Prepojenie bolo skopírované do schránky!", "success");
+            } catch (err) {
+                showToast("Kopírovanie zlyhalo.", "error");
+            }
+            document.body.removeChild(textArea);
+        };
+
+        // Custom Toast Box Implementation (Replaces browser standard alert)
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            
+            let colorClasses = "bg-gray-900 border-brand-accent text-brand-accent";
+            let icon = "fa-circle-info";
+
+            if (type === 'success') {
+                colorClasses = "bg-gray-950 border-brand-neonGreen text-brand-neonGreen";
+                icon = "fa-circle-check";
+            } else if (type === 'error') {
+                colorClasses = "bg-gray-950 border-red-500 text-red-500";
+                icon = "fa-circle-exclamation";
+            } else if (type === 'warning') {
+                colorClasses = "bg-gray-950 border-yellow-500 text-yellow-500";
+                icon = "fa-triangle-exclamation";
+            }
+
+            toast.className = `flex items-center gap-3 px-4 py-3 rounded-xl border glass shadow-2xl transition-all duration-300 transform translate-y-2 opacity-0 pointer-events-auto ${colorClasses}`;
+            toast.innerHTML = `
+                <i class="fa-solid ${icon} text-lg"></i>
+                <div class="text-xs font-bold text-gray-200">${message}</div>
+            `;
+
+            container.appendChild(toast);
+
+            // Animate In
+            setTimeout(() => {
+                toast.classList.remove('translate-y-2', 'opacity-0');
+            }, 10);
+
+            // Auto Close after 4s
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'scale-95');
+                setTimeout(() => {
+                    toast.remove();
+                }, 300);
+            }, 4000);
+        }
+
+        // Logout Action
+        window.logoutBtn.onclick = function() {
+            localStorage.removeItem('gamepla631_user_session');
+            currentUserData = null;
+            updateUIAccessibility();
+            showToast("Boli ste bezpečne odhlásený.", "success");
+        };
+
+        // ----------------- INIT APPLICATION -----------------
+        window.onload = async function() {
+            // First step: authenticate
+            await runAuthenticationCheck();
+            // Start listening to the cloud records
+            startRealtimeDatabaseListeners();
+        };
+
+    </script>
+</body>
+</html>
